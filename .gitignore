@@ -1,0 +1,6 @@
+# Data and outputs (keep README, train.csv, and OnlineNewsPopularity.names tracked)
+OnlineNewsPopularity.csv
+test.csv
+
+# Script used to generate train/test split (reproducible with RANDOM_SEED=42)
+split_data.py
