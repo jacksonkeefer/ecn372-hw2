@@ -1,5 +1,5 @@
 # Makefile for ECN 372 Homework 2
-# Simple makefile to train and evaluate the model
+# makefile to train and evaluate the model
 
 .PHONY: evaluate train
 

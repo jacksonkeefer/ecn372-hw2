@@ -1,4 +1,4 @@
-# Purpose: Train a model to predict article popularity (shares).
+# Train a model to predict article popularity (shares).
 # Strategy:
 #   1) Load training data
 #   2) Predict log(shares) instead of shares (shares is very skewed)
@@ -13,7 +13,7 @@ library(tidymodels)
 # Make results reproducible (same CV folds each run)
 set.seed(42)
 
-# --- Load Training Data ---
+# Load Training Data 
 # Read the training data from data/raw/train.csv into a dataframe
 df <- read_csv("data/raw/train.csv")
 
@@ -35,7 +35,7 @@ cat("Number of columns:", ncol(df), "\n")
 cat("\nSummary of shares:\n")
 summary(df$shares)
 
-# --- Create Cross-Validation Splits ---
+# Create Cross-Validation Splits
 # Create 10-fold cross-validation splits using tidymodels
 # This randomly divides the data into 10 equal-sized groups (folds)
 # Each fold will serve as a validation set once, while the other 9 folds are used for training
@@ -43,7 +43,7 @@ summary(df$shares)
 # The set.seed(42) above ensures we get the same splits each time we run the code
 folds <- vfold_cv(df, v = 10)
 
-# --- Create Recipe for Data Preprocessing ---
+# Create Recipe for Data Preprocessing 
 # A recipe defines how to prepare the data before modeling
 # We specify that log_shares is our outcome (what we want to predict)
 # and all other variables (except shares) will be predictors
@@ -52,7 +52,7 @@ recipe <- recipe(log_shares ~ ., data = df) %>%
   # We don't want shares as a predictor since we're predicting log_shares
   # (shares and log_shares are the same information, just transformed)
   step_rm(shares) %>%
-  # Step 1.5: Remove the url column
+  #  Remove the url column
   # The url column is non-numeric (text) and cannot be used as a predictor
   # glmnet requires all predictors to be numeric
   step_rm(url) %>%
@@ -66,7 +66,7 @@ recipe <- recipe(log_shares ~ ., data = df) %>%
   # It ensures all predictors are on a similar scale, which improves model performance
   step_normalize(all_numeric_predictors())
 
-# --- Define Model ---
+# Define Model 
 # Create a regularized linear regression model using glmnet
 # Regularized regression adds a penalty to prevent overfitting and can perform variable selection
 model <- linear_reg(penalty = tune(), mixture = tune()) %>%
@@ -78,7 +78,7 @@ model <- linear_reg(penalty = tune(), mixture = tune()) %>%
 #   * Lower penalty = more complex model (larger coefficients, more variables)
 #   * We'll tune this to find the best value using cross-validation
 #
-# - mixture: Controls the type of regularization (the balance between Lasso and Ridge)
+# mixture: Controls the type of regularization (the balance between Lasso and Ridge)
 #   * mixture = 0: Pure Ridge regression (L2 penalty) - shrinks coefficients but keeps all variables
 #   * mixture = 1: Pure Lasso regression (L1 penalty) - can set coefficients to exactly zero (variable selection)
 #   * mixture between 0 and 1: Elastic Net - combines both Lasso and Ridge benefits
@@ -91,19 +91,6 @@ workflow <- workflow() %>%
   add_recipe(recipe) %>%
   add_model(model)
 
-# --- Tune Model Parameters ---
-# Tuning means trying different values of model parameters (penalty and mixture) 
-# to find the combination that gives the best performance
-# We use cross-validation (CV) to evaluate each parameter combination because:
-# 1) It gives us an honest estimate of how well the model will perform on new data
-# 2) We can test many parameter combinations without needing a separate test set
-# 3) Each fold acts as a mini test set, so we get 10 performance estimates per combination
-
-# Create a grid of parameter values to try
-# penalty: values on log10 scale from 1e-6 (0.000001) to 1e1 (10)
-#   We specify the range as c(-6, 1), which tidymodels interprets as log10 scale internally
-#   This creates values evenly spaced on log10 scale: 10^-6, 10^-5, ..., 10^0, 10^1
-# mixture: values from 0 (pure Ridge) to 1 (pure Lasso)
 tune_grid <- grid_regular(
   penalty(range = c(-6, 1)),  # log10 scale: -6 means 10^-6, 1 means 10^1
   mixture(range = c(0, 1)),
@@ -138,7 +125,7 @@ final_workflow <- workflow %>%
 final_model <- final_workflow %>%
   fit(data = df)
 
-# --- Save the Final Model ---
+# Save the Final Model
 # Create the models/ directory if it doesn't exist
 # dir.create() won't error if the directory already exists (showWarnings = FALSE)
 if (!dir.exists("models")) {
